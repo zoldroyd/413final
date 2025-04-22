@@ -1,97 +1,107 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using final413.API.Data;
 
 namespace final413.API.Controllers;
 
-[Route("[controller]")]
 [ApiController]
+[Route("[controller]")]
 public class EntController : ControllerBase
 {
-    private EntDbContext _entContext;
+    private readonly EntDbContext _entContext;
 
-    public EntController(EntDbContext temp)
+    public EntController(EntDbContext context)
     {
-        _entContext = temp;
+        _entContext = context;
     }
 
-    // [HttpGet("AllProjects")]
-    // public IActionResult GetProjects(int pageSize = 10, int pageNum = 1, [FromQuery] List<string>? projectTypes = null)
-    // {
-    //     var query = _entContext.Projects.AsQueryable();
-    //
-    //     if (projectTypes != null && projectTypes.Any())
-    //     {
-    //         query = query.Where(p => projectTypes.Contains(p.ProjectType));
-    //     }
-    //
-    //     var totalNumProjects = query.Count();
-    //
-    //     var data = query
-    //         .Skip((pageNum - 1) * pageSize)
-    //         .Take(pageSize)
-    //         .ToList();
-    //
-    //     var result = new
-    //     {
-    //         Projects = data,
-    //         NumProjects = totalNumProjects
-    //     };
-    //
-    //     return Ok(result);
-    // }
+    // GET: /Ent/AllEnts
+    [HttpGet("AllEnts")]
+    public async Task<IActionResult> GetAllEntertainers()
+    {
+        var ents = await _entContext.Entertainers
+            .Select(e => new
+            {
+                entertainerId = e.EntertainerId,
+                entStageName = e.EntStageName,
+                entSsn = e.EntSsn,
+                entStreetAddress = e.EntStreetAddress,
+                entCity = e.EntCity,
+                entState = e.EntState,
+                entZipCode = e.EntZipCode,
+                entPhoneNumber = e.EntPhoneNumber,
+                entWebPage = e.EntWebPage,
+                entEmailAddress = e.EntEmailAddress,
+                dateEntered = e.DateEntered,
 
-    // [HttpGet("GetProjectTypes")]
-    // public IActionResult GetProjectTypes()
-    // {
-    //     var projectTypes = _entContext.Projects
-    //         .Select(p => p.ProjectType)
-    //         .Distinct()
-    //         .ToList();
-    //
-    //     return Ok(projectTypes);
-    // }
+                bookingsCount = _entContext.Engagements.Count(g => g.EntertainerId == e.EntertainerId),
+                lastBookingDate = _entContext.Engagements
+                    .Where(g => g.EntertainerId == e.EntertainerId)
+                    .OrderByDescending(g => g.StartDate)
+                    .Select(g => g.StartDate)
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
 
-    // [HttpPost("AddProject")]
-    // public IActionResult AddProject([FromBody] Project newProject)
-    // {
-    //     _entContext.Projects.Add(newProject);
-    //     _entContext.SaveChanges();
-    //
-    //     return Ok(newProject);
-    // }
+        return Ok(new { ents });
+    }
 
-    // [HttpPut("updateProject/{projectId}")]
-    // public IActionResult UpdateProject(int projectId, [FromBody] Project updatedProject)
-    // {
-    //     var existingProject = _entContext.Projects.Find(projectId);
-    //
-    //     existingProject.ProjectName = updatedProject.ProjectName;
-    //     existingProject.ProjectType = updatedProject.ProjectType;
-    //     existingProject.ProjectRegionalProgram = updatedProject.ProjectRegionalProgram;
-    //     existingProject.ProjectImpact = updatedProject.ProjectImpact;
-    //     existingProject.ProjectPhase = updatedProject.ProjectPhase;
-    //     existingProject.ProjectFunctionalityStatus = updatedProject.ProjectFunctionalityStatus;
-    //
-    //     _entContext.Projects.Update(existingProject);
-    //     _entContext.SaveChanges();
-    //
-    //     return Ok(existingProject);
-    //
-    // }
 
-    // [HttpDelete("DeleteProject/{projectId}")]
-    // public IActionResult DeleteProject(int projectId)
-    // {
-    //     var project = _entContext.Projects.Find(projectId);
-    //
-    //     if (project == null)
-    //     {
-    //         return NotFound(new { message = "Project not found" });
-    //     }
-    //
-    //     _entContext.Projects.Remove(project);
-    //     _entContext.SaveChanges();
-    //
-    //     return NoContent();
-    // }
+    // GET: /Ent/{id}
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetEntertainer(int id)
+    {
+        var ent = await _entContext.Entertainers.FindAsync(id);
+        if (ent == null) return NotFound();
+        return Ok(ent);
+    }
+
+    // POST: /Ent/AddEnt
+    [HttpPost("AddEnt")]
+    public async Task<IActionResult> AddEntertainer([FromBody] Entertainer newEnt)
+    {
+        _entContext.Entertainers.Add(newEnt);
+        await _entContext.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetEntertainer), new { id = newEnt.EntertainerId }, newEnt);
+    }
+
+    // PUT: /Ent/UpdateEntt/{id}
+    [HttpPut("UpdateEnt/{id}")]
+    public async Task<IActionResult> UpdateEntertainer(int id, [FromBody] Entertainer updatedEnt)
+    {
+        if (id != updatedEnt.EntertainerId)
+            return BadRequest("ID mismatch");
+
+        var existing = await _entContext.Entertainers.FindAsync(id);
+        if (existing == null)
+            return NotFound();
+
+        // Update fields manually to avoid tracking conflict
+        existing.EntStageName = updatedEnt.EntStageName;
+        existing.EntSsn = updatedEnt.EntSsn;
+        existing.EntStreetAddress = updatedEnt.EntStreetAddress;
+        existing.EntCity = updatedEnt.EntCity;
+        existing.EntState = updatedEnt.EntState;
+        existing.EntZipCode = updatedEnt.EntZipCode;
+        existing.EntPhoneNumber = updatedEnt.EntPhoneNumber;
+        existing.EntWebPage = updatedEnt.EntWebPage;
+        existing.EntEmailAddress = updatedEnt.EntEmailAddress;
+        existing.DateEntered = updatedEnt.DateEntered;
+
+        await _entContext.SaveChangesAsync();
+        return NoContent();
+    }
+
+
+    // DELETE: /Ent/DeleteEnt/{id}
+    [HttpDelete("DeleteEnt/{id}")]
+    public async Task<IActionResult> DeleteEntertainer(int id)
+    {
+        var ent = await _entContext.Entertainers.FindAsync(id);
+        if (ent == null) return NotFound();
+
+        _entContext.Entertainers.Remove(ent);
+        await _entContext.SaveChangesAsync();
+        return NoContent();
+    }
 }
