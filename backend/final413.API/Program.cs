@@ -1,5 +1,6 @@
+using final413.API.Data;
 using Microsoft.EntityFrameworkCore;
-using WaterProject.API.Data;
+// using 413final.API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,8 +11,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<WaterDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("WaterConnection")));
+builder.Services.AddDbContext<EntDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("EntConnection")));
 
 builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactAppBlah",
